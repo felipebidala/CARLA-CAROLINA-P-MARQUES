@@ -1,0 +1,636 @@
+/* Reset Básico e Estilos Globais */
+:root {
+  --primary-color: #c6a05a; /* Dourado */
+  --background-color: #fffff8; /* Branco-gelo */
+  --text-color: #000000; /* Preto */
+  --card-background: #ffffff; /* Branco para cards */
+  --light-gray: #e0e0e0;
+  --white: #ffffff;
+  --error-color: #e53e3e;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', serif;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Cabeçalho */
+.header {
+  background: var(--card-background);
+  height: 90px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header-nav {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  position: relative;
+  height: 100%;
+}
+
+.logo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-color);
+  text-decoration: none;
+}
+
+.nav-list {
+  list-style: none;
+  display: flex;
+  gap: 2rem;
+}
+
+.nav-list a {
+  text-decoration: none;
+  color: var(--text-color);
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.nav-list a:hover {
+  color: var(--primary-color);
+}
+
+/* Seção Hero */
+.hero {
+  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=1932&auto=format&fit=crop') no-repeat center center/cover;
+  color: var(--white);
+  padding: 100px 0;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.hero p {
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hero-highlights {
+  margin-bottom: 2rem;
+}
+
+.hero-highlights p {
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+
+.btn {
+  display: inline-block;
+  padding: 12px 28px;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: var(--white);
+}
+
+.btn-primary:hover {
+  background-color: #b38f4d;
+  transform: translateY(-2px);
+}
+
+/* Seções Genéricas */
+.section {
+  padding: 60px 0;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 2.8rem;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.section-subtitle {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 4rem;
+}
+
+/* Seção Sobre Nós */
+#about {
+  background-color: var(--card-background);
+}
+.about-content {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+.about-content p {
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #333;
+}
+.about-content .intro, .about-content .outro {
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: var(--text-color);
+}
+.about-content .tagline {
+  font-style: italic;
+  font-weight: bold;
+  font-size: 1.3rem;
+  color: var(--primary-color);
+  border-left: 4px solid var(--primary-color);
+  padding-left: 1.5rem;
+  margin: 2rem auto;
+  text-align: left;
+  display: inline-block;
+}
+.team-members {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2.5rem;
+  text-align: left;
+  margin-top: 3rem;
+}
+.team-members .member {
+  padding: 1.5rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+.team-members .member h3 {
+  color: var(--text-color);
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+.team-members .member p {
+    font-size: 1rem;
+    line-height: 1.7;
+    text-align: justify;
+}
+
+.mission-values {
+  display: flex;
+  gap: 2.5rem;
+  margin: 3rem auto;
+  padding: 2rem;
+  background-color: #fdfdfd;
+  border-left: 5px solid var(--primary-color);
+  max-width: 900px;
+  border-radius: 0 8px 8px 0;
+}
+.mission-values-item {
+  flex: 1;
+}
+.mission-values-item h4 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem;
+  color: var(--text-color);
+  margin-bottom: 0.75rem;
+}
+.mission-values-item p {
+  font-size: 1rem;
+  color: #333;
+  line-height: 1.7;
+}
+
+/* Seção de Serviços */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 2rem;
+  align-items: stretch; /* Garante que os cards tenham a mesma altura */
+}
+
+.service-card {
+  background: var(--card-background);
+  padding: 2.5rem 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.service-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.service-card .icon {
+  font-size: 3rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.service-card h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.service-card p {
+    font-size: 1rem;
+    color: #555;
+    flex-grow: 1; /* Permite que o parágrafo cresça, mas a lista não */
+}
+
+.service-card .service-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 1.5rem;
+  text-align: left;
+  font-size: 0.95rem;
+  color: #333;
+}
+.service-card .service-list li {
+  margin-bottom: 0.6rem;
+  padding-left: 1.4rem;
+  position: relative;
+}
+.service-card .service-list li::before {
+  content: '•';
+  color: var(--primary-color);
+  position: absolute;
+  left: 0;
+  font-weight: bold;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.services-cta-container {
+  text-align: center;
+  margin-top: 4rem;
+}
+
+/* Formulário de Contato */
+.contact-info {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2.5rem;
+}
+
+.contact-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 1.1rem;
+  padding: 10px 20px;
+  border-radius: 50px;
+  border: 1px solid var(--light-gray);
+  transition: all 0.3s ease;
+}
+
+.contact-link:hover {
+  background-color: var(--primary-color);
+  color: var(--white);
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.contact-form {
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--card-background);
+  padding: 2.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--light-gray);
+  border-radius: 5px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  background-color: #fcfcfc;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(198, 160, 90, 0.2);
+}
+
+.form-group.error input {
+    border-color: var(--error-color);
+}
+  
+.error-message {
+    color: var(--error-color);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 5px;
+  background-color: var(--primary-color);
+  color: var(--white);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-submit:hover {
+  background-color: #b38f4d;
+}
+
+/* Rodapé */
+.footer {
+  background-color: #1a1a1a;
+  color: var(--background-color);
+  text-align: center;
+  padding: 2rem 0;
+  margin-top: 40px;
+}
+
+.footer-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.footer-social {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.footer-social a {
+    color: var(--background-color);
+    transition: color 0.3s ease;
+}
+
+.footer-social a:hover {
+    color: var(--primary-color);
+}
+
+/* Chatbot Styles */
+.chatbot-toggler {
+  position: fixed;
+  right: 35px;
+  bottom: 30px;
+  height: 50px;
+  width: 50px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: var(--white);
+  transition: all 0.2s ease;
+  z-index: 2000;
+}
+.chatbot-toggler span {
+  position: absolute;
+}
+.chatbot-toggler.active .close {
+  opacity: 1;
+}
+.chatbot-toggler.active .mode_comment {
+  opacity: 0;
+}
+
+.chatbot {
+  position: fixed;
+  right: 35px;
+  bottom: 100px;
+  width: 420px;
+  background: var(--card-background);
+  border-radius: 15px;
+  box-shadow: 0 0 128px 0 rgba(0, 0, 0, 0.1),
+              0 32px 64px -48px rgba(0, 0, 0, 0.5);
+  transform-origin: bottom right;
+  transition: transform 0.3s ease;
+  z-index: 2000;
+}
+
+.chatbot header {
+  background: var(--primary-color);
+  padding: 16px 0;
+  text-align: center;
+  color: var(--white);
+  border-radius: 15px 15px 0 0;
+}
+.chatbot header h2 {
+  font-size: 1.4rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.chatbot .chatbox {
+  height: 510px;
+  overflow-y: auto;
+  padding: 30px 20px 100px;
+  list-style: none;
+}
+.chatbox .chat {
+  display: flex;
+  margin-bottom: 15px;
+}
+.chatbox .incoming > div {
+  width: 100%;
+}
+.chatbox .chat p {
+  padding: 12px 16px;
+  border-radius: 18px 18px 18px 0;
+  background: #f1f1f1;
+  color: var(--text-color);
+  max-width: 90%;
+  font-size: 0.95rem;
+  word-wrap: break-word;
+}
+.chatbox .incoming span {
+  height: 32px;
+  width: 32px;
+  color: var(--white);
+  background: var(--primary-color);
+  text-align: center;
+  line-height: 32px;
+  border-radius: 4px;
+  margin-right: 10px;
+  align-self: flex-start;
+}
+.chatbox .outgoing {
+  justify-content: flex-end;
+}
+.chatbox .outgoing p {
+  background: var(--primary-color);
+  color: var(--white);
+  border-radius: 18px 18px 0 18px;
+}
+
+.chatbot .chat-input {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  gap: 5px;
+  background: var(--card-background);
+  padding: 5px 20px;
+  border-top: 1px solid var(--light-gray);
+  border-radius: 0 0 15px 15px;
+}
+.chat-input textarea {
+  height: 55px;
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
+  resize: none;
+  padding: 16px 15px 16px 0;
+  font-family: 'Poppins', sans-serif;
+  background-color: transparent;
+}
+
+.chat-input textarea:disabled {
+  cursor: not-allowed;
+}
+
+.chat-input #send-btn {
+  align-self: flex-end;
+  height: 55px;
+  width: 55px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  background: none;
+  transition: color 0.2s ease;
+}
+.chat-input #send-btn:hover {
+    color: #b38f4d;
+}
+.chat-input #send-btn:disabled {
+    color: var(--light-gray);
+    cursor: not-allowed;
+}
+
+/* Estilos dos botões de resposta rápida */
+.quick-reply-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  max-width: 90%;
+}
+.quick-reply-button {
+  background-color: var(--white);
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.quick-reply-button:hover {
+  background-color: var(--primary-color);
+  color: var(--white);
+}
+
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .nav-list {
+    display: none; /* Simplificar ou usar um menu hambúrguer */
+  }
+
+  .hero h1 {
+    font-size: 2.5rem;
+  }
+
+  .section-title {
+    font-size: 2.2rem;
+  }
+  
+  .team-members {
+    grid-template-columns: 1fr;
+  }
+
+  .mission-values {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .chatbot {
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+  .chatbot .chatbox {
+    height: 90%;
+  }
+}
