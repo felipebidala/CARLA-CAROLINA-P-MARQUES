@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { GoogleGenAI, Chat, Type } from "@google/genai";
 
 import './index.css';
 
@@ -9,6 +8,8 @@ interface Message {
   text: string;
   sender: 'user' | 'bot';
   options?: string[];
+  redirectUrl?: string;
+  redirectButtonText?: string;
 }
 
 // --- Validação e Formatação de CPF ---
@@ -42,147 +43,272 @@ const formatCpf = (cpf: string): string => {
 const Chatbot = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [shouldRedirect, setShouldRedirect] = useState(false);
-  const [collectedData, setCollectedData] = useState<string[]>([]);
-  const chatRef = useRef<Chat | null>(null);
+  const [currentStep, setCurrentStep] = useState('start');
+  const [userData, setUserData] = useState({ 
+    service: '', 
+    companyType: '', 
+    taxRegime: '', 
+    cnpj: '', 
+    name: '', 
+    cpf: '', 
+    phone: '', 
+    location: '' 
+  });
   const chatboxRef = useRef<HTMLUListElement>(null);
-
-  useEffect(() => {
-    const initChat = async () => {
-      try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        chatRef.current = ai.chats.create({
-          model: 'gemini-2.5-flash',
-          config: {
-            systemInstruction: `Seu nome é 'MB Assistente'. Você é um assistente virtual especialista da 'MB Regulariza', uma empresa de consultoria e contabilidade focada em MEI e pequenas empresas no Brasil.
-
-Seu objetivo principal é saudar o cliente, entender a necessidade dele (Abrir empresa, Regularizar, Alterar dados), fazer perguntas curtas para qualificar a situação e, em seguida, coletar Nome e WhatsApp.
-
-Regras estritas que você DEVE seguir:
-1.  **Fluxo de Coleta:**
-    *   Primeiro, qualifique a necessidade do cliente com perguntas de múltipla escolha.
-    *   Depois de entender o serviço, peça o **nome completo**.
-    *   Depois de receber o nome, peça o **número de WhatsApp com DDD**.
-    *   Após receber o número de WhatsApp, a conversa está encerrada.
-2.  **Formato da Resposta:** Siga um destes três formatos, sem exceção:
-    *   **JSON para Perguntas com Opções:** Se sua resposta for uma pergunta com opções, a resposta DEVE ser APENAS um objeto JSON válido com as chaves "response" (string) e "options" (array de strings).
-        *   Exemplo: \`{"response": "Qual o tipo de CNPJ?", "options": ["MEI", "LTDA"]}\`
-    *   **Texto Simples para Coleta de Dados:** Se sua resposta for uma pergunta aberta para coletar dados (como nome ou WhatsApp), a resposta DEVE ser texto simples.
-        *   Exemplo: "Entendido. Para continuar, por favor, me informe seu nome completo."
-    *   **JSON para Finalização:** Ao receber o número do WhatsApp do cliente, sua resposta final DEVE ser APENAS um objeto JSON válido com as chaves "finalMessage" (string) e "redirectToWhatsApp" (boolean \`true\`).
-        *   Exemplo: \`{"finalMessage": "Perfeito! Seus dados foram registrados. Você será redirecionado para o nosso WhatsApp para finalizar.", "redirectToWhatsApp": true}\`
-3.  **Proibido Aconselhar:** NUNCA forneça conselhos contábeis, financeiros ou legais.
-4.  **Proibido Inventar:** NUNCA invente preços, custos ou prazos. Se perguntado, use a resposta padrão.
-5.  **Foco na Coleta:** Seu objetivo é SEMPRE seguir o fluxo para coletar as informações e finalizar a conversa para o redirecionamento.
-6.  **Resposta Padrão para Preços/Prazos:** Se o cliente perguntar algo que você não sabe (ex: 'quanto custa?'), responda EXATAMENTE com: 'Para te passar um valor preciso, um de nossos especialistas precisa analisar seu caso em detalhes. Posso pegar seu nome e WhatsApp para que ele entre em contato sem compromisso?' (responda em texto simples, não JSON).
-7.  **Brevidade:** Mantenha suas respostas curtas e diretas.
-8.  **Idioma:** Responda sempre em português brasileiro.`,
-          },
-        });
-        setMessages([{ 
-            text: 'Olá! Eu sou o MB Assistente. Como posso ajudar você hoje?', 
-            sender: 'bot',
-            options: ['Abrir uma empresa', 'Regularizar', 'Alterar dados']
-        }]);
-      } catch (error) {
-        console.error("Erro ao inicializar o chatbot:", error);
-        setMessages([{ text: 'Desculpe, não consigo me conectar no momento. Tente mais tarde.', sender: 'bot' }]);
-      }
-    };
-    initChat();
-  }, []);
   
+  const whatsAppNumber = "5531982318463";
+
+  const chatFlows: Record<string, any> = {
+    'Regularização de empresa': {
+      wppText: (data: typeof userData) => `Olá, tudo bem? Meu nome é ${data.name} (${data.phone}). Gostaria de saber mais sobre regularização de empresa em ${data.location}.`,
+      buttonText: "➡️ Ir para o WhatsApp"
+    },
+    'Licenças e Alvarás': {
+      wppText: (data: typeof userData) => `Olá, tudo bem? Meu nome é ${data.name} (${data.phone}). Gostaria de saber mais sobre Licenças e Alvarás em ${data.location}.`,
+      buttonText: "➡️ Falar no WhatsApp"
+    },
+    'Regularização Ambiental': {
+      wppText: (data: typeof userData) => `Olá, tudo bem? Meu nome é ${data.name} (${data.phone}). Gostaria de saber mais sobre Regularização Ambiental em ${data.location}.`,
+      buttonText: "➡️ Ir para o WhatsApp"
+    },
+    'Certidões e Documentações': {
+      wppText: (data: typeof userData) => `Olá, tudo bem? Meu nome é ${data.name} (${data.phone}). Gostaria de saber mais sobre Certidões e Documentações em ${data.location}.`,
+      buttonText: "➡️ Ir para o WhatsApp"
+    },
+    'Consultoria e Treinamentos': {
+      wppText: (data: typeof userData) => `Olá, tudo bem? Meu nome é ${data.name} (${data.phone}). Gostaria de saber mais sobre Consultoria e Treinamentos em ${data.location}.`,
+      buttonText: "➡️ Falar no WhatsApp"
+    },
+    'Falar com a equipe MB Regulariza': {
+      wppText: (data: typeof userData) => `Olá, tudo bem? Meu nome é ${data.name} (${data.phone}). Gostaria de falar com a equipe da MB Regulariza.`,
+      buttonText: "➡️ Chamar no WhatsApp"
+    },
+    'Baixa de Empresa': {
+      wppText: (data: typeof userData) => `Olá, tudo bem? Meu nome é ${data.name} (${data.phone}). Gostaria de dar baixa na empresa com CNPJ ${data.cnpj}, localizada em ${data.location}.`,
+      buttonText: "➡️ Falar com o atendimento"
+    },
+    'Regularização de CPF': {
+      wppText: (data: typeof userData) => `Olá, tudo bem? Meu nome é ${data.name} (CPF: ${data.cpf}, Tel: ${data.phone}). Gostaria de saber mais sobre regularização de CPF.`,
+      buttonText: "➡️ Falar com o atendimento"
+    },
+  };
+
+  const initialMessage: Message = {
+    text: 'Olá! 👋 Eu sou o MB Assistente da MB Regulariza. Como posso ajudar você hoje?',
+    sender: 'bot',
+    options: [
+      'Abrir uma empresa',
+      'Baixa de Empresa',
+      'Regularização de CPF',
+      ...Object.keys(chatFlows).filter(k => !['Baixa de Empresa', 'Regularização de CPF'].includes(k))
+    ].sort()
+  };
+
   useEffect(() => {
-    // Auto-scroll to the latest message
+    setMessages([initialMessage]);
+  }, []);
+
+  useEffect(() => {
     if (chatboxRef.current) {
-        chatboxRef.current.scrollTop = chatboxRef.current.scrollHeight;
+      chatboxRef.current.scrollTop = chatboxRef.current.scrollHeight;
     }
   }, [messages]);
 
-  useEffect(() => {
-    if (shouldRedirect) {
-      // Small delay for user to read the message.
-      const timer = setTimeout(() => {
-        const companyWhatsApp = "5531982318463";
-        const userConversation = collectedData
-          .map(item => `- ${item}`)
-          .join('\n');
-
-        const prefilledMessage = `Olá, MB Regulariza! Gostaria de um atendimento.\n\n*Resumo da Solicitação:*\n${userConversation}`;
-        const whatsappUrl = `https://wa.me/${companyWhatsApp}?text=${encodeURIComponent(prefilledMessage)}`;
-        window.open(whatsappUrl, '_blank');
-        setShouldRedirect(false); // Reset state
-        setCollectedData([]); // Reset collected data for the next chat
-      }, 2000);
-
-      return () => clearTimeout(timer); // Cleanup timer on unmount
-    }
-  }, [shouldRedirect, collectedData]);
-
-  const sendMessageToBot = async (messageText: string) => {
-    if (!chatRef.current) return;
-    setIsLoading(true);
-    try {
-      const response = await chatRef.current.sendMessage({ message: messageText });
-      let botMessage: Message;
-
-      try {
-        const parsedData = JSON.parse(response.text ?? '{}');
-        
-        if (parsedData.redirectToWhatsApp === true) {
-            botMessage = {
-                text: parsedData.finalMessage || "Obrigado! Estamos te redirecionando para o nosso WhatsApp.",
-                sender: 'bot'
-            };
-            setMessages(prev => [...prev, botMessage]);
-            setShouldRedirect(true);
-        } else {
-             botMessage = {
-              text: parsedData.response || "Desculpe, não entendi.",
-              sender: 'bot',
-              options: parsedData.options || undefined
-            };
-            setMessages(prev => [...prev, botMessage]);
-        }
-      } catch (e) {
-        botMessage = {
-          text: response.text ?? "Desculpe, não entendi.",
-          sender: 'bot'
-        };
-        setMessages(prev => [...prev, botMessage]);
-      }
-    } catch (error) {
-      console.error("Erro ao enviar mensagem:", error);
-      const errorMessage = { text: 'Ocorreu um erro. Por favor, tente novamente.', sender: 'bot' as const };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
+  const addMessage = (message: Message) => {
+    setMessages(prev => [...prev, message]);
   };
-
-  const handleSendMessage = async (e: React.FormEvent) => {
+  
+  const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedInput = input.trim();
-    if (!trimmedInput || isLoading) return;
+    if (!trimmedInput) return;
 
-    const userMessage = { text: trimmedInput, sender: 'user' as const };
-    setMessages(prev => [...prev, userMessage]);
-    setCollectedData(prev => [...prev, trimmedInput]);
+    addMessage({ text: trimmedInput, sender: 'user' });
     setInput('');
-    await sendMessageToBot(trimmedInput);
-  };
+    
+    let botMessage: Message;
+    let nextStep = currentStep;
+    const updatedUserData = { ...userData };
 
-  const handleOptionClick = async (optionText: string) => {
-    if (isLoading) return;
-    const userMessage = { text: optionText, sender: 'user' as const };
-    setMessages(prev => [...prev, userMessage]);
-    setCollectedData(prev => [...prev, optionText]);
-    await sendMessageToBot(optionText);
+    switch (currentStep) {
+      case 'awaiting_cnpj':
+        updatedUserData.cnpj = trimmedInput;
+        botMessage = { text: "Obrigado. Agora, qual o seu nome completo?", sender: 'bot' };
+        nextStep = 'awaiting_name';
+        break;
+
+      case 'awaiting_name':
+        updatedUserData.name = trimmedInput;
+        if (updatedUserData.service === 'Regularização de CPF') {
+          botMessage = { text: "Qual o seu CPF?", sender: 'bot' };
+          nextStep = 'awaiting_cpf';
+        } else {
+          botMessage = { text: "Qual o seu telefone com DDD?", sender: 'bot' };
+          nextStep = 'awaiting_phone';
+        }
+        break;
+      
+      case 'awaiting_cpf':
+        updatedUserData.cpf = trimmedInput;
+        botMessage = { text: "Qual o seu telefone com DDD?", sender: 'bot' };
+        nextStep = 'awaiting_phone';
+        break;
+
+      case 'awaiting_phone':
+        updatedUserData.phone = trimmedInput;
+        if (['Falar com a equipe MB Regulariza', 'Regularização de CPF'].includes(updatedUserData.service)) {
+          const flow = chatFlows[updatedUserData.service];
+          const wppMessage = flow.wppText(updatedUserData);
+          const whatsappUrl = `https://wa.me/${whatsAppNumber}?text=${encodeURIComponent(wppMessage)}`;
+          botMessage = {
+            text: 'Obrigado! Para continuar, clique no botão abaixo e fale com nossa equipe no WhatsApp.',
+            sender: 'bot',
+            redirectUrl: whatsappUrl,
+            redirectButtonText: flow.buttonText
+          };
+          nextStep = 'done';
+        } else {
+          botMessage = { text: "Por favor, me diga o 📍 Estado e 🏙️ Município onde será o processo.", sender: 'bot' };
+          nextStep = 'awaiting_location';
+        }
+        break;
+
+      case 'awaiting_location':
+        updatedUserData.location = trimmedInput;
+        
+        let wppMessage = '';
+        let buttonText = '➡️ Falar com o atendimento no WhatsApp';
+
+        if (updatedUserData.service === 'Abrir uma empresa') {
+            let companyInfo = updatedUserData.companyType;
+            if (updatedUserData.companyType === 'LTDA (ou outro tipo)' && updatedUserData.taxRegime) {
+              companyInfo += ` (${updatedUserData.taxRegime})`;
+            }
+            wppMessage = `Olá, tudo bem? Meu nome é ${updatedUserData.name} (${updatedUserData.phone}). Gostaria de abrir uma empresa do tipo ${companyInfo} em ${updatedUserData.location}.`;
+        } else {
+          const flow = chatFlows[updatedUserData.service];
+          wppMessage = flow.wppText(updatedUserData);
+          buttonText = flow.buttonText;
+        }
+
+        const whatsappUrl = `https://wa.me/${whatsAppNumber}?text=${encodeURIComponent(wppMessage)}`;
+
+        botMessage = {
+          text: 'Obrigado! Para continuar, clique no botão abaixo e fale com nossa equipe no WhatsApp.',
+          sender: 'bot',
+          redirectUrl: whatsappUrl,
+          redirectButtonText: buttonText
+        };
+        nextStep = 'done';
+        break;
+
+      default:
+        botMessage = { ...initialMessage };
+        nextStep = 'start';
+        break;
+    }
+    
+    setUserData(updatedUserData);
+    setCurrentStep(nextStep);
+    setTimeout(() => addMessage(botMessage), 500);
+  };
+  
+  const handleOptionClick = (optionText: string) => {
+    addMessage({ text: optionText, sender: 'user' });
+
+    let botMessage: Message;
+    let nextStep = currentStep;
+    
+    switch (currentStep) {
+      case 'start':
+        // Reset user data when starting a new flow to ensure state exclusivity
+        const initialUserData = { 
+          service: optionText, 
+          companyType: '', 
+          taxRegime: '', 
+          cnpj: '', 
+          name: '', 
+          cpf: '', 
+          phone: '', 
+          location: '' 
+        };
+        setUserData(initialUserData);
+
+        if (optionText === 'Abrir uma empresa') {
+          botMessage = {
+            text: 'Perfeito! 😊 Qual tipo de empresa você quer abrir?',
+            sender: 'bot',
+            options: ['MEI', 'LTDA (ou outro tipo)']
+          };
+          nextStep = 'awaiting_company_type';
+        } else if (optionText === 'Baixa de Empresa') {
+          botMessage = { text: 'Entendido. Por favor, informe o CNPJ da empresa que deseja dar baixa.', sender: 'bot' };
+          nextStep = 'awaiting_cnpj';
+        } else if (optionText === 'Regularização de CPF') {
+          botMessage = { text: 'Ok. Para iniciar, qual o seu nome completo?', sender: 'bot' };
+          nextStep = 'awaiting_name';
+        } else {
+          botMessage = {
+            text: `Entendido! Para o serviço de "${optionText}", qual o seu nome?`,
+            sender: 'bot'
+          };
+          nextStep = 'awaiting_name';
+        }
+        break;
+
+      case 'awaiting_company_type':
+        setUserData(prev => ({ ...prev, companyType: optionText }));
+        if (optionText === 'LTDA (ou outro tipo)') {
+          botMessage = {
+            text: 'Entendido. Qual o regime de tributação desejado?',
+            sender: 'bot',
+            options: ['Simples Nacional', 'Lucro Presumido', 'Lucro Real', 'Ainda não decidi']
+          };
+          nextStep = 'awaiting_tax_regime';
+        } else { // MEI
+          botMessage = {
+            text: 'Ok. Para abrir sua empresa, qual o seu nome?',
+            sender: 'bot'
+          };
+          nextStep = 'awaiting_name';
+        }
+        break;
+      
+      case 'awaiting_tax_regime':
+          setUserData(prev => ({ ...prev, taxRegime: optionText }));
+          botMessage = {
+            text: 'Ok. Para abrir sua empresa, qual o seu nome?',
+            sender: 'bot'
+          };
+          nextStep = 'awaiting_name';
+          break;
+
+      default:
+        botMessage = { ...initialMessage };
+        nextStep = 'start';
+        break;
+    }
+    
+    setCurrentStep(nextStep);
+    setTimeout(() => addMessage(botMessage), 500);
   };
 
   const lastMessage = messages[messages.length - 1];
   const isAwaitingOption = lastMessage?.sender === 'bot' && !!lastMessage.options;
+  const isAwaitingInput = ['awaiting_name', 'awaiting_phone', 'awaiting_location', 'awaiting_cnpj', 'awaiting_cpf'].includes(currentStep);
+  const isDone = currentStep === 'done';
+  
+  const getPlaceholderText = () => {
+    if (isAwaitingOption) return "Escolha uma opção acima...";
+    if (isDone) return "A conversa foi encerrada.";
+    if (currentStep === 'awaiting_name') return "Digite seu nome completo...";
+    if (currentStep === 'awaiting_phone') return "Digite seu telefone com DDD...";
+    if (currentStep === 'awaiting_location') return "Digite o Estado e Município...";
+    if (currentStep === 'awaiting_cnpj') return "Digite o CNPJ...";
+    if (currentStep === 'awaiting_cpf') return "Digite o CPF...";
+    return "Digite sua dúvida...";
+  };
+
 
   return (
     <div className="chatbot">
@@ -192,26 +318,32 @@ Regras estritas que você DEVE seguir:
       <ul ref={chatboxRef} className="chatbox">
         {messages.map((msg, index) => (
           <li key={index} className={`chat ${msg.sender === 'user' ? 'outgoing' : 'incoming'}`}>
-             {msg.sender === 'bot' && <span className="material-symbols-outlined">smart_toy</span>}
+            {msg.sender === 'bot' && <span className="material-symbols-outlined">smart_toy</span>}
             <div>
-                <p>{msg.text}</p>
-                {msg.sender === 'bot' && msg.options && index === messages.length - 1 && (
+              <p>{msg.text}</p>
+              {msg.sender === 'bot' && msg.options && index === messages.length - 1 && (
+                <div className="quick-reply-options">
+                  {msg.options.map((option, i) => (
+                    <button key={i} className="quick-reply-button" onClick={() => handleOptionClick(option)}>
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+               {msg.redirectUrl && index === messages.length - 1 && (
                     <div className="quick-reply-options">
-                        {msg.options.map((option, i) => (
-                            <button key={i} className="quick-reply-button" onClick={() => handleOptionClick(option)}>
-                                {option}
-                            </button>
-                        ))}
+                        <a href={msg.redirectUrl} target="_blank" rel="noopener noreferrer" className="redirect-button">
+                            {msg.redirectButtonText}
+                        </a>
                     </div>
                 )}
             </div>
           </li>
         ))}
-         {isLoading && <li className="chat incoming"><span className="material-symbols-outlined">smart_toy</span><p>Digitando...</p></li>}
       </ul>
       <form className="chat-input" onSubmit={handleSendMessage}>
-        <textarea 
-          placeholder={isAwaitingOption ? "Escolha uma opção acima..." : "Digite sua dúvida..."}
+        <textarea
+          placeholder={getPlaceholderText()}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
@@ -220,14 +352,15 @@ Regras estritas que você DEVE seguir:
               handleSendMessage(e);
             }
           }}
-          disabled={isAwaitingOption}
-          required 
+          disabled={isAwaitingOption || isDone || !isAwaitingInput}
+          required
         />
-        <button id="send-btn" type="submit" className="material-symbols-outlined" disabled={isAwaitingOption}>send</button>
+        <button id="send-btn" type="submit" className="material-symbols-outlined" disabled={isAwaitingOption || isDone || !isAwaitingInput}>send</button>
       </form>
     </div>
   );
 };
+
 
 // --- Componentes de Ícones ---
 const WhatsAppIcon = () => (
@@ -254,6 +387,73 @@ function App() {
   });
   const [cpfError, setCpfError] = useState('');
   const [showChatbot, setShowChatbot] = useState(false);
+
+  const whatsAppNumber = "5531982318463";
+  const whatsAppBaseUrl = `https://wa.me/${whatsAppNumber}`;
+
+  const servicesData = [
+    {
+      icon: 'business_center',
+      title: 'Regularização Empresarial',
+      description: 'Cuidamos de toda a parte burocrática para que você empreenda com segurança e tranquilidade.',
+      items: [
+        'Abertura e encerramento de empresas',
+        'Alterações contratuais e societárias',
+        'MEI (abertura, alteração, baixa)',
+        'Regularização junto à Receita Federal (CNPJ e CPF)',
+        'Inscrições Estadual e Municipal',
+      ],
+      whatsappMessage: 'Olá, tudo bem? 😊 Gostaria de saber mais sobre os serviços de Regularização Empresarial.'
+    },
+    {
+      icon: 'gavel',
+      title: 'Licenças e Alvarás',
+      description: 'Garantimos que sua empresa opere em total conformidade com as exigências legais.',
+      items: [
+        'Alvará de Localização e Funcionamento',
+        'Alvará Sanitário',
+        'Alvará / Licença para Publicidade',
+        'Licenciamento Ambiental Municipal e Estadual',
+      ],
+      whatsappMessage: 'Olá, tudo bem? 😊 Gostaria de saber mais sobre Licenças e Alvarás.'
+    },
+    {
+      icon: 'eco',
+      title: 'Regularização Ambiental',
+      description: 'Soluções completas para manter sua empresa em dia com as normas ambientais.',
+      items: [
+        'Licenciamento e atualização de processos',
+        'Diagnósticos e estudos de impacto ambiental',
+        'Consultoria, compliance e auditoria interna',
+        'PGRSS (Resíduos de Serviços de Saúde)',
+        'Acompanhamento de condicionantes',
+      ],
+      whatsappMessage: 'Olá, tudo bem? 🌱 Gostaria de saber mais sobre os serviços de Regularização Ambiental.'
+    },
+    {
+      icon: 'description',
+      title: 'Certidões e Documentações',
+      description: 'Emitimos e regularizamos todos os documentos necessários para a operação da sua empresa.',
+      items: [
+        'Emissão de certidões (federais, estaduais, etc.)',
+        'Regularização de cadastros e registros',
+        'Representação técnica junto a órgãos públicos',
+      ],
+      whatsappMessage: 'Olá, tudo bem? 📑 Gostaria de saber mais sobre Certidões e Documentações.'
+    },
+    {
+      icon: 'school',
+      title: 'Consultoria e Treinamentos',
+      description: 'Capacitamos empresas e equipes para uma gestão eficiente e sustentável.',
+      items: [
+        'Treinamentos sobre legislação ambiental',
+        'Capacitação em regularização empresarial',
+        'Mentoria para empreendedores',
+        'Consultoria estratégica e administrativa',
+      ],
+      whatsappMessage: 'Olá, tudo bem? 🎓 Gostaria de saber mais sobre Consultoria e Treinamentos Empresariais.'
+    }
+  ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -421,68 +621,33 @@ function App() {
             <h2 className="section-title">Nossos Serviços</h2>
             <p className="section-subtitle">Soluções completas para a saúde do seu negócio.</p>
             <div className="services-grid">
-              
-              <div className="service-card">
-                <span className="icon material-symbols-outlined">business_center</span>
-                <h3>Regularização Empresarial</h3>
-                <p>Cuidamos de toda a parte burocrática para que você empreenda com segurança e tranquilidade.</p>
-                <ul className="service-list">
-                  <li>Abertura e encerramento de empresas</li>
-                  <li>Alterações contratuais e societárias</li>
-                  <li>MEI (abertura, alteração, baixa)</li>
-                  <li>Regularização junto à Receita Federal (CNPJ e CPF)</li>
-                  <li>Inscrições Estadual e Municipal</li>
-                </ul>
-              </div>
-
-              <div className="service-card">
-                <span className="icon material-symbols-outlined">gavel</span>
-                <h3>Licenças e Alvarás</h3>
-                <p>Garantimos que sua empresa opere em total conformidade com as exigências legais.</p>
-                 <ul className="service-list">
-                  <li>Alvará de Localização e Funcionamento</li>
-                  <li>Alvará Sanitário</li>
-                  <li>Alvará / Licença para Publicidade</li>
-                  <li>Licenciamento Ambiental Municipal e Estadual</li>
-                </ul>
-              </div>
-
-              <div className="service-card">
-                <span className="icon material-symbols-outlined">eco</span>
-                <h3>Regularização Ambiental</h3>
-                <p>Soluções completas para manter sua empresa em dia com as normas ambientais.</p>
-                 <ul className="service-list">
-                  <li>Licenciamento e atualização de processos</li>
-                  <li>Diagnósticos e estudos de impacto ambiental</li>
-                  <li>Consultoria, compliance e auditoria interna</li>
-                  <li>PGRSS (Resíduos de Serviços de Saúde)</li>
-                  <li>Acompanhamento de condicionantes</li>
-                </ul>
-              </div>
-
-              <div className="service-card">
-                <span className="icon material-symbols-outlined">description</span>
-                 <h3>Certidões e Documentações</h3>
-                <p>Emitimos e regularizamos todos os documentos necessários para a operação da sua empresa.</p>
-                 <ul className="service-list">
-                  <li>Emissão de certidões (federais, estaduais, etc.)</li>
-                  <li>Regularização de cadastros e registros</li>
-                  <li>Representação técnica junto a órgãos públicos</li>
-                </ul>
-              </div>
-              
-               <div className="service-card">
-                <span className="icon material-symbols-outlined">school</span>
-                 <h3>Consultoria e Treinamentos</h3>
-                <p>Capacitamos empresas e equipes para uma gestão eficiente e sustentável.</p>
-                 <ul className="service-list">
-                  <li>Treinamentos sobre legislação ambiental</li>
-                  <li>Capacitação em regularização empresarial</li>
-                  <li>Mentoria para empreendedores</li>
-                  <li>Consultoria estratégica e administrativa</li>
-                </ul>
-              </div>
-
+               {servicesData.map((service, index) => {
+                const whatsappUrl = `${whatsAppBaseUrl}?text=${encodeURIComponent(service.whatsappMessage)}`;
+                return (
+                  <div className="service-card" key={index}>
+                    <div>
+                      <span className="icon material-symbols-outlined">{service.icon}</span>
+                      <h3>{service.title}</h3>
+                      <p>{service.description}</p>
+                      <ul className="service-list">
+                        {service.items.map((item, i) => (
+                          <li key={i}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="service-card-cta">
+                       <a 
+                        href={whatsappUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="btn btn-secondary"
+                      >
+                        Saiba Mais
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <div className="services-cta-container">
                <a 
@@ -503,7 +668,7 @@ function App() {
                 <p className="section-subtitle">Tem alguma dúvida ou quer iniciar seu processo? Entre em contato ou preencha o formulário abaixo.</p>
 
                 <div className="contact-info">
-                    <a href="https://wa.me/5531982318463" target="_blank" rel="noopener noreferrer" className="contact-link">
+                    <a href={`${whatsAppBaseUrl}?text=${encodeURIComponent("Olá, tudo bem? 👋 Gostaria de falar com a equipe da MB Regulariza Empresas.")}`} target="_blank" rel="noopener noreferrer" className="contact-link">
                         <WhatsAppIcon />
                         <span>WhatsApp</span>
                     </a>
@@ -547,7 +712,7 @@ function App() {
                 <div className="footer-content">
                     <p>&copy; {new Date().getFullYear()} MB Regulariza Empresas. Todos os direitos reservados.</p>
                     <div className="footer-social">
-                         <a href="https://wa.me/5531982318463" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+                         <a href={`${whatsAppBaseUrl}?text=${encodeURIComponent("Olá, tudo bem? 👋 Gostaria de falar com a equipe da MB Regulariza Empresas.")}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
                             <WhatsAppIcon />
                          </a>
                          <a href="https://www.instagram.com/mbregularizaempresas/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
