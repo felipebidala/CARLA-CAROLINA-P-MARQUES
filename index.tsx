@@ -361,7 +361,7 @@ function App() {
               <p>📍 Regularizamos empresas em todo o Brasil</p>
               <p>⚖️ Burocracia zero, tudo online</p>
             </div>
-            <a href="#contact" className="btn btn-primary">Comece Agora</a>
+            <a href="#about" className="btn btn-primary">Comece Agora</a>
           </div>
         </section>
 
